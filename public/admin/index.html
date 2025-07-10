@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50">
+    <div id="app" x-data="adminApp()" x-init="init()">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <h1 class="text-xl font-semibold text-gray-900">School Admin Dashboard</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-500" x-text="admin?.name || 'Admin'"></span>
+                        <button @click="logout()" class="text-sm text-red-600 hover:text-red-800">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Login Form -->
+        <div x-show="!isAuthenticated" class="min-h-screen flex items-center justify-center">
+            <div class="max-w-md w-full space-y-8 p-8">
+                <div>
+                    <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                        Sign in to Admin Dashboard
+                    </h2>
+                </div>
+                <form @submit.prevent="login()" class="mt-8 space-y-6">
+                    <div>
+                        <label for="email" class="sr-only">Email address</label>
+                        <input x-model="loginForm.email" type="email" required 
+                               class="relative block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                               placeholder="Email address">
+                    </div>
+                    <div>
+                        <label for="password" class="sr-only">Password</label>
+                        <input x-model="loginForm.password" type="password" required
+                               class="relative block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                               placeholder="Password">
+                    </div>
+                    <div>
+                        <button type="submit" :disabled="loading"
+                                class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50">
+                            <span x-text="loading ? 'Signing in...' : 'Sign in'"></span>
+                        </button>
+                    </div>
+                </form>
+                <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <p class="text-sm text-yellow-800">
+                        <strong>Demo Credentials:</strong><br>
+                        Email: admin@amalorpavamschool.edu<br>
+                        Password: admin123
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div x-show="isAuthenticated" class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            <!-- Tabs -->
+            <div class="border-b border-gray-200 mb-6">
+                <nav class="-mb-px flex space-x-8">
+                    <button @click="activeTab = 'dashboard'" 
+                            :class="activeTab === 'dashboard' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                        Dashboard
+                    </button>
+                    <button @click="activeTab = 'messages'" 
+                            :class="activeTab === 'messages' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                        Messages
+                    </button>
+                    <button @click="activeTab = 'parents'" 
+                            :class="activeTab === 'parents' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                        Parents
+                    </button>
+                    <button @click="activeTab = 'students'" 
+                            :class="activeTab === 'students' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                        Students
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Dashboard Tab -->
+            <div x-show="activeTab === 'dashboard'">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                    <div class="bg-white overflow-hidden shadow rounded-lg">
+                        <div class="p-5">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-indigo-500 rounded-md flex items-center justify-center">
+                                        <span class="text-white text-sm font-medium">P</span>
+                                    </div>
+                                </div>
+                                <div class="ml-5 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">Total Parents</dt>
+                                        <dd class="text-lg font-medium text-gray-900" x-text="dashboardData.overview?.totalParents || 0"></dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white overflow-hidden shadow rounded-lg">
+                        <div class="p-5">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                                        <span class="text-white text-sm font-medium">S</span>
+                                    </div>
+                                </div>
+                                <div class="ml-5 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">Total Students</dt>
+                                        <dd class="text-lg font-medium text-gray-900" x-text="dashboardData.overview?.totalStudents || 0"></dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white overflow-hidden shadow rounded-lg">
+                        <div class="p-5">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                                        <span class="text-white text-sm font-medium">M</span>
+                                    </div>
+                                </div>
+                                <div class="ml-5 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">Total Messages</dt>
+                                        <dd class="text-lg font-medium text-gray-900" x-text="dashboardData.overview?.totalMessages || 0"></dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white overflow-hidden shadow rounded-lg">
+                        <div class="p-5">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
+                                        <span class="text-white text-sm font-medium">T</span>
+                                    </div>
+                                </div>
+                                <div class="ml-5 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">Today's Messages</dt>
+                                        <dd class="text-lg font-medium text-gray-900" x-text="dashboardData.overview?.dailyMessages || 0"></dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Messages -->
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Recent Messages</h3>
+                        <div class="space-y-3">
+                            <template x-for="message in dashboardData.recentMessages" :key="message.id">
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900" x-text="message.title"></p>
+                                        <p class="text-sm text-gray-500" x-text="message.category"></p>
+                                    </div>
+                                    <span class="text-xs text-gray-400" x-text="formatDate(message.createdAt)"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages Tab -->
+            <div x-show="activeTab === 'messages'">
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900">Messages</h3>
+                            <button @click="showMessageForm = true" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">
+                                Send New Message
+                            </button>
+                        </div>
+                        
+                        <!-- Message List -->
+                        <div class="space-y-3">
+                            <template x-for="message in messages" :key="message.id">
+                                <div class="border border-gray-200 rounded-md p-4">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="text-sm font-medium text-gray-900" x-text="message.title"></h4>
+                                            <p class="text-sm text-gray-600 mt-1" x-text="message.content"></p>
+                                            <div class="flex items-center mt-2 space-x-4">
+                                                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded" x-text="message.category"></span>
+                                                <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded" x-text="message.priority"></span>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-xs text-gray-500" x-text="formatDate(message.createdAt)"></p>
+                                            <div class="mt-2" x-show="message.deliveryStats">
+                                                <p class="text-xs text-gray-600">
+                                                    Delivered: <span x-text="message.deliveryStats?.delivered || 0"></span> / 
+                                                    <span x-text="message.deliveryStats?.total || 0"></span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parents Tab -->
+            <div x-show="activeTab === 'parents'">
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Parents</h3>
+                        <div class="space-y-3">
+                            <template x-for="parent in parents" :key="parent.id">
+                                <div class="border border-gray-200 rounded-md p-4">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <h4 class="text-sm font-medium text-gray-900" x-text="parent.name"></h4>
+                                            <p class="text-sm text-gray-600" x-text="parent.phoneNumber"></p>
+                                            <p class="text-xs text-gray-500 mt-1">
+                                                Students: <span x-text="parent.students?.length || 0"></span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Students Tab -->
+            <div x-show="activeTab === 'students'">
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Students</h3>
+                        <div class="space-y-3">
+                            <template x-for="student in students" :key="student.id">
+                                <div class="border border-gray-200 rounded-md p-4">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <h4 class="text-sm font-medium text-gray-900" x-text="student.name"></h4>
+                                            <p class="text-sm text-gray-600">Reg: <span x-text="student.registrationNumber"></span></p>
+                                            <p class="text-sm text-gray-600">Class: <span x-text="student.class"></span> <span x-text="student.section"></span></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Form Modal -->
+        <div x-show="showMessageForm" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Send New Message</h3>
+                    <form @submit.prevent="sendMessage()">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Title</label>
+                                <input x-model="messageForm.title" type="text" required
+                                       class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Content</label>
+                                <textarea x-model="messageForm.content" required rows="3"
+                                          class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Category</label>
+                                <select x-model="messageForm.category" required
+                                        class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+                                    <option value="">Select Category</option>
+                                    <option value="homework">Homework</option>
+                                    <option value="assignments">Assignments</option>
+                                    <option value="school-info">School Info</option>
+                                    <option value="emergency">Emergency</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Priority</label>
+                                <select x-model="messageForm.priority" required
+                                        class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+                                    <option value="">Select Priority</option>
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex justify-end space-x-3 mt-6">
+                            <button type="button" @click="showMessageForm = false"
+                                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
+                                Cancel
+                            </button>
+                            <button type="submit" :disabled="loading"
+                                    class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50">
+                                Send Message
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function adminApp() {
+            return {
+                isAuthenticated: false,
+                loading: false,
+                admin: null,
+                activeTab: 'dashboard',
+                showMessageForm: false,
+                
+                // Data
+                dashboardData: {},
+                messages: [],
+                parents: [],
+                students: [],
+                
+                // Forms
+                loginForm: {
+                    email: 'admin@amalorpavamschool.edu',
+                    password: 'admin123'
+                },
+                messageForm: {
+                    title: '',
+                    content: '',
+                    category: '',
+                    priority: '',
+                    type: 'text',
+                    recipients: []
+                },
+
+                async init() {
+                    const token = localStorage.getItem('adminToken');
+                    if (token) {
+                        this.isAuthenticated = true;
+                        await this.loadDashboardData();
+                    }
+                },
+
+                async login() {
+                    this.loading = true;
+                    try {
+                        // Mock login for demo
+                        if (this.loginForm.email === 'admin@amalorpavamschool.edu' && 
+                            this.loginForm.password === 'admin123') {
+                            
+                            const mockToken = 'mock-jwt-token';
+                            localStorage.setItem('adminToken', mockToken);
+                            this.isAuthenticated = true;
+                            this.admin = { name: 'School Administrator', email: this.loginForm.email };
+                            await this.loadDashboardData();
+                        } else {
+                            alert('Invalid credentials');
+                        }
+                    } catch (error) {
+                        console.error('Login error:', error);
+                        alert('Login failed');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                logout() {
+                    localStorage.removeItem('adminToken');
+                    this.isAuthenticated = false;
+                    this.admin = null;
+                },
+
+                async loadDashboardData() {
+                    try {
+                        // Mock data for demo
+                        this.dashboardData = {
+                            overview: {
+                                totalParents: 150,
+                                totalStudents: 200,
+                                totalMessages: 45,
+                                dailyMessages: 3
+                            },
+                            recentMessages: [
+                                {
+                                    id: '1',
+                                    title: 'School Closure Notice',
+                                    category: 'emergency',
+                                    createdAt: new Date()
+                                },
+                                {
+                                    id: '2',
+                                    title: 'Mathematics Homework',
+                                    category: 'homework',
+                                    createdAt: new Date()
+                                }
+                            ]
+                        };
+
+                        this.messages = [
+                            {
+                                id: '1',
+                                title: 'School Closure Notice',
+                                content: 'Due to heavy rainfall, school will remain closed tomorrow.',
+                                category: 'emergency',
+                                priority: 'high',
+                                createdAt: new Date(),
+                                deliveryStats: { total: 150, delivered: 148, read: 120 }
+                            },
+                            {
+                                id: '2',
+                                title: 'Mathematics Homework',
+                                content: 'Complete exercises 1-15 from Chapter 5.',
+                                category: 'homework',
+                                priority: 'medium',
+                                createdAt: new Date(),
+                                deliveryStats: { total: 45, delivered: 45, read: 38 }
+                            }
+                        ];
+
+                        this.parents = [
+                            {
+                                id: '1',
+                                name: 'John Doe',
+                                phoneNumber: '+1234567890',
+                                students: [{ name: 'Jane Doe' }]
+                            },
+                            {
+                                id: '2',
+                                name: 'Mary Smith',
+                                phoneNumber: '+1234567891',
+                                students: [{ name: 'Bob Smith' }]
+                            }
+                        ];
+
+                        this.students = [
+                            {
+                                id: '1',
+                                name: 'Jane Doe',
+                                registrationNumber: 'REG001',
+                                class: '10',
+                                section: 'A'
+                            },
+                            {
+                                id: '2',
+                                name: 'Bob Smith',
+                                registrationNumber: 'REG002',
+                                class: '9',
+                                section: 'B'
+                            }
+                        ];
+                    } catch (error) {
+                        console.error('Error loading dashboard data:', error);
+                    }
+                },
+
+                async sendMessage() {
+                    this.loading = true;
+                    try {
+                        // Mock send message
+                        alert('Message sent successfully!');
+                        this.showMessageForm = false;
+                        this.messageForm = {
+                            title: '',
+                            content: '',
+                            category: '',
+                            priority: '',
+                            type: 'text',
+                            recipients: []
+                        };
+                        await this.loadDashboardData();
+                    } catch (error) {
+                        console.error('Send message error:', error);
+                        alert('Failed to send message');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                formatDate(date) {
+                    if (!date) return '';
+                    return new Date(date).toLocaleDateString();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
