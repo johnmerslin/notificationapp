@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -10,13 +11,15 @@ const parentRoutes = require('./routes/parents');
 const studentRoutes = require('./routes/students');
 const messageRoutes = require('./routes/messages');
 const analyticsRoutes = require('./routes/analytics');
-const adminRoutes = require('./routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 8081;
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:8081',
   credentials: true
@@ -36,13 +39,25 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Serve static files for admin dashboard
+app.use('/admin', express.static(path.join(__dirname, 'public/admin')));
+
+// Admin dashboard route
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/admin/index.html'));
+});
+
+// Default route - redirect to admin
+app.get('/', (req, res) => {
+  res.redirect('/admin');
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/parents', parentRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/analytics', analyticsRoutes);
-app.use('/api/admin', adminRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
